@@ -74,7 +74,7 @@ class InstallTask {
 	copySources() {
 		var kitSrc = path.join(__dirname, "src"),
 			appServerPackagedir = path.join(kitSrc, "com", "totvs", "appserver"),
-			mActivity = path.join(kitSrc, "io", "ionic", "stater" ),
+			mActivity = path.join(kitSrc, "io", "ionic", "starter" ),
 			binPath = path.join(__dirname, "libs"),
 			assetsPath = path.join(__dirname, "assets"),
 			targetPath = path.join("platforms", "android"),
