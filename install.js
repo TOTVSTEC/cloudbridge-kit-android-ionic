@@ -79,7 +79,7 @@ class InstallTask {
 			assetsPath = path.join(__dirname, "assets"),
 			targetPath = path.join("platforms", "android"),
 			targetPackageDir = path.join(targetPath, "src", "com", "totvs", "appserver"),
-			targetMActivity = path.join(targetPath, "src", "io", "cordova", "hellocordova"),
+			targetMActivity = path.join(targetPath, "src", "io", "ionic", "starter"),
 			targetAssetsPath = path.join(targetPath, "assets"),
 			targetBinPath = path.join(targetPath, "libs");
 
@@ -95,7 +95,7 @@ class InstallTask {
 		//MainActivity
 		files = shelljs.ls(path.join(mActivity, "*.java"));
 		for (var i = 0; i < files.length; i++){
-			var targetFile = path.join(targetPackageDir, path.basename(files[i]));
+			var targetFile = path.join(targetMActivity, path.basename(files[i]));
 			shelljs.cp("-f", files[i], targetFile);
 		}
 
