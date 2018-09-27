@@ -4,7 +4,9 @@ var path = require('path'),
 	Q = null,
 	shelljs = null,
 	utils = null,
-	inquirer = null;
+	inquirer = null,
+	cordova = null,
+	semver = null;
 
 const OPTIONS_OVERWIRTE = 0,
 	OPTIONS_RENAME = 1;
@@ -26,6 +28,8 @@ class InstallTask {
 		shelljs = cli.require('shelljs');
 		inquirer = cli.require('inquirer');
 		utils = cli.utils;
+		cordova = cb_require('utils/cordova');
+		semver = cli.require('semver');
 	}
 
 	run() {
@@ -72,45 +76,65 @@ class InstallTask {
 	}
 
 	copySources() {
-		var kitSrc = path.join(__dirname, "src"),
-			appServerPackagedir = path.join(kitSrc, "com", "totvs", "appserver"),
-			mActivity = path.join(kitSrc, "io", "ionic", "starter" ),
+		var androidVersion = cordova.findCordovaAndroidVersion(this.projectDir),
+			packagePath = path.join.apply(path, this.projectData.id.split('.')),
+			kitSrc = path.join(__dirname, "src"),
 			binPath = path.join(__dirname, "libs"),
 			assetsPath = path.join(__dirname, "assets"),
-			targetPath = path.join("platforms", "android"),
-			targetPackageDir = path.join(targetPath, "src", "com", "totvs", "appserver"),
-			targetMActivity = path.join(targetPath, "src", "io", "ionic", "starter"),
-			targetAssetsPath = path.join(targetPath, "assets"),
+			targetPath = path.join(this.projectDir, "platforms", "android"),
+			targetMainPath = path.join(targetPath, 'app', 'src', 'main'),
+			targetPackageDir = path.join(targetMainPath, "java", "com", "totvs", "appserver"),
+			targetMActivity = path.join(targetMainPath, "java", packagePath),
+			targetAssetsPath = path.join(targetMainPath, "assets"),
+			targetBinPath = path.join(targetMainPath, "jniLibs");
+
+		if (semver.lt(androidVersion, '7.0.0')) {
+			targetPackageDir = path.join(targetPath, "src", "com", "totvs", "appserver");
+			targetMActivity = path.join(targetPath, "src", packagePath);
+			targetAssetsPath = path.join(targetPath, "assets");
 			targetBinPath = path.join(targetPath, "libs");
+		}
 
-		// AppServer package (com/totvs/appserver)
+		// create directories
 		shelljs.mkdir('-p', targetPackageDir);
-		//AppServer.java
-		var files = shelljs.ls(path.join(appServerPackagedir, "*.java"));
-		for (var i = 0; i < files.length; i++){
-			var targetFile = path.join(targetPackageDir, path.basename(files[i]));
-			shelljs.cp("-f", files[i], targetFile);
-		}
+		shelljs.mkdir('-p', targetMActivity);
+		shelljs.mkdir('-p', targetBinPath);
+		shelljs.mkdir('-p', targetAssetsPath);
 
-		//MainActivity
-		files = shelljs.ls(path.join(mActivity, "*.java"));
-		for (var i = 0; i < files.length; i++){
-			var targetFile = path.join(targetMActivity, path.basename(files[i]));
-			shelljs.cp("-f", files[i], targetFile);
-		}
+		console.log('directories created!');
+
+		//AppServer.java
+		shelljs.cp("-f", path.join(kitSrc, "AppServer.java"), targetPackageDir);
+
+		console.log('AppServer.java copied!');
+
+		var tempFolder = path.join(os.tmpdir(), 'cloudbridge-' + new Date().getTime());
+		shelljs.mkdir('-p', tempFolder);
+		shelljs.cp("-f", path.join(kitSrc, "MainActivity.java"), tempFolder);
+
+		utils.copyTemplate(tempFolder, targetMActivity, {
+			project: this.projectData
+		}, /\.(java)/);
+
+		console.log('MainActivity.java copied!');
+
+		shelljs.rm('-rf', tempFolder);
 
 		//Binario
-		var procDir = shelljs.ls("-d", path.join(binPath, "/*"));
-		for (var i=0; i < procDir.length; i++){
-			shelljs.cp("-rf", procDir[i], targetBinPath);
+		var jnis = shelljs.ls("-d", path.join(binPath, "*"));
+		for (var i = 0; i < jnis.length; i++) {
+			shelljs.cp("-rf", jnis[i], targetBinPath);
 		}
+
+		console.log('libs copied!');
 
 		//Assets
-		var fassets = shelljs.ls(path.join(assetsPath, "*"));
-		for (var i = 0; i < fassets.length; i++){
-			shelljs.cp("-rf", fassets[i], targetAssetsPath);
+		var assets = shelljs.ls(path.join(assetsPath, "*"));
+		for (var j = 0; j < assets.length; j++) {
+			shelljs.cp("-rf", assets[j], targetAssetsPath);
 		}
 
+		console.log('assets copied!');
 	}
 
 	checkForExistingFiles() {
@@ -166,7 +190,7 @@ class InstallTask {
 	}
 
 	runCordova() {
-		if (shelljs.exec("cordova platform add android").code != 0) {
+		if (shelljs.exec("ionic cordova platform add android").code != 0) {
 			shelljs.rm('-rf', path.join(_this.projectDir, "platforms", "android"));
 			throw new Error("Make sure cordova is installed (npm install -g cordova).");
 		}

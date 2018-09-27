@@ -17,7 +17,7 @@
        under the License.
  */
 
-package io.ionic.starter;
+package <%= project.id %>;
 
 import android.os.Bundle;
 import com.totvs.appserver.*;
