@@ -1,6 +1,6 @@
 {
   "name": "cloudbridge-kit-android-ionic",
-  "version": "0.2.0-SNAPSHOT",
+  "version": "0.2.0",
   "description": "A tool for creating and developing CloudBridge android apps.",
   "homepage": "http://www.totvs.com/",
   "keywords": [
